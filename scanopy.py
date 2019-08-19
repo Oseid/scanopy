@@ -6,10 +6,9 @@
 ######################################
 #CodedBy: Oseid Aldary               #
 ######################################
-import thread,socket,Queue,optparse,signal
-from sys import stdout as std,excepthook
+import threading,socket,Queue,optparse,signal
+from sys import stdout as std
 from os import system as sy
-excepthook = lambda *args: None
 qu = Queue.Queue()
 done = False
 fin = False
@@ -24,8 +23,8 @@ def handler(sig,frame):
     try: qu.task_done()
     finally:exit(1)
 def service(port):
-    try:return "/"+socket.getservbyport(int(port))
-    except socket.error: return ""
+    try:return socket.getservbyport(int(port))
+    except socket.error: return "??"
 def sorte(LIST):
     ck = set()
     cksort = ck.add
@@ -35,24 +34,23 @@ def isFloat(var):
         test = float(var)
         return True
     except ValueError: return False
-
 def scan(server,proto,timeout,verb):
     global done
     global fin
     global threadFin
     while not done:
-        try: port = qu.get(timeout=.5)
-        except:
-            fin = True
+        if qu.empty():
+            fin=True
             return
+        port = qu.get(timeout=.5)
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) if proto.lower() == "tcp" else socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(int(timeout))
         try:
           s.connect((server,port))
-          std.write("[+] {}:{}{}~{} ::=> OPEN\n".format(server,port,service(port),proto))
-          openPorts.append(str(port))
+          std.write("[+] {} :: {} :: {} :: {} :: {} ::=> OPEN\n".format(server,port,service(port),proto,"~ "+str(timeout)+"s" if verb else ""))
+          openPorts.append(str(port)+"\\{} ".format(service(port)))
         except socket.error:
-            if verb: std.write("[-] {}:{}{}~{} ::=> CLOSE\n".format(server,port, service(port),proto))
+            if verb: std.write("[-] {} :: {} :: {} :: {} :: {} ::=> CLOSE\n".format(server,port, service(port),proto,"~ "+str(timeout)+"s" if verb else ""))
         except Exception:
             qu.put(port)
             qu.task_done()
@@ -78,12 +76,21 @@ def startScan(target,ports,proto,timeout,threadlen,verb):
             print("[!] Invalid Port selected !!!")
             exit(1)
         ports = [ports]
-    print(" ")
+    THREADS = []
     for port in ports: qu.put(int(port))
-    for i in range(threadlen):thread.start_new_thread(scan,(target,proto,timeout,verb))
+    if len(ports) < threadlen:threadlen=len(ports)
+    print("[i] {} Threads started".format(threadlen))
+    for i in range(threadlen):
+        thread = threading.Thread(target=scan,args=(target,proto,timeout,verb))
+        thread.daemon = True
+        thread.start()
+        THREADS.append(thread)
     signal.signal(signal.SIGINT, handler)
     while not fin: continue
+    for thread in THREADS:
+        print("[*] thread-"+str(thread.ident))
     qu.join()
+    print("yes")
 parse = optparse.OptionParser("""
    _____                                   
   / ___/_________ _____  ____  ____  __  __
@@ -94,21 +101,20 @@ parse = optparse.OptionParser("""
 [*] Multi-Threaded Port Scanner        1.0
 [*] Welcome To Scanopy (^_^)
 
-[OPTIONS]:
-         |-------------------------------------------------
-         | -t --target   <TARGET>    [Enter Target to scan]
-         |-------------------------------------------------
-         | -p --ports    <PORT/S>    [Enter Ports to scan]
-         |------------------------------------------------
-         | -P --protocol <protocol>  [Enter Connection Protocol]
-         |------------------------------------------------------
-         | -T --timeout  <Timeout>   [Enter Connection Timeout]
-         |-----------------------------------------------------
-         | -d --threads  <threads>   [Enter Number Of Threads]
-         |----------------------------------------------------
-         | -v --verbose              [Show More Output]
-------------------------------------------------------------
-[EXAMPLES]:
+ [OPTIONS]:
+          |-------------------------------------------------
+          | -t --target   <TARGET>    [Enter Target to scan]
+          |-------------------------------------------------
+          | -p --ports    <PORT/S>    [Enter Ports to scan]
+          |------------------------------------------------
+          | -P --protocol <protocol>  [Enter Connection Protocol]
+          |------------------------------------------------------
+          | -T --timeout  <Timeout>   [Enter Connection Timeout]
+          |-----------------------------------------------------
+          | -d --threads  <threads>   [Enter Number Of Threads]
+          |----------------------------------------------------
+          | -v --verbose              [Show More Output]
+[EXAMPLES]:=========================================================
           |--------------------------------------------------------------
           | python scanopy.py -t google.com -p 1-1025 -P UDP -T 0.5 -d 10
           |--------------------------------------------------------------
@@ -162,14 +168,13 @@ def main():
         print("\n[~] Scanning ...\n")
         startScan(target, ports, proto, timeout,threads,verb)
         if openPorts:
-         print("====================================")
-         print("[+] OPEN PORTS : [ "+",".join(openPorts)+" ]")
+         print("\n====================================")
+         print("[+] OPEND PORTS : [ "+",".join(openPorts)+"]")
     else:
         print(parse.usage)
         exit(1)
 if __name__ == "__main__":
     main()
-
 ##############################################################
 #####################                #########################
 #####################   END OF TOOL  #########################
