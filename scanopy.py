@@ -42,18 +42,19 @@ def scan(server,proto,timeout,verb):
         if qu.empty():
             fin=True
             return
-        try:port = qu.get(timeout=.5)
+        try:
+         port = qu.get(timeout=.5)
         except Exception:
-              fin=True
-              return
+		fin=True
+		return
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) if proto.lower() == "tcp" else socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(int(timeout))
         try:
           s.connect((server,port))
-          std.write("[+] {} :: {} :: {} :: {} :: {} ::=> OPEN\n".format(server,port,service(port),proto,"~ "+str(timeout)+"s" if verb else ""))
+          std.write("[+] {} :: {} :: {} :: {} :: {} ::=> OPEN\n".format(server,port,service(port),proto,str(timeout)+"s" if verb else ""))
           openPorts.append(str(port)+"\\{} ".format(service(port)))
         except socket.error:
-            if verb: std.write("[-] {} :: {} :: {} :: {} :: {} ::=> CLOSE\n".format(server,port, service(port),proto,"~ "+str(timeout)+"s" if verb else ""))
+            if verb: std.write("[-] {} :: {} :: {} :: {} :: {} ::=> CLOSE\n".format(server,port, service(port),proto,str(timeout)+"s"))
         except Exception:
             qu.put(port)
             qu.task_done()
@@ -82,7 +83,7 @@ def startScan(target,ports,proto,timeout,threadlen,verb):
     THREADS = []
     for port in ports: qu.put(int(port))
     if len(ports) < threadlen:threadlen=len(ports)
-    print("[i] {} Threads started".format(threadlen))
+    print("[i] [{}] Threads started".format(threadlen))
     for i in range(threadlen):
         thread = threading.Thread(target=scan,args=(target,proto,timeout,verb))
         thread.daemon = True
@@ -92,6 +93,7 @@ def startScan(target,ports,proto,timeout,threadlen,verb):
     while not fin: continue
     for thread in THREADS:thread.join()
     qu.join()
+
 parse = optparse.OptionParser("""
    _____                                   
   / ___/_________ _____  ____  ____  __  __
@@ -176,6 +178,7 @@ def main():
         exit(1)
 if __name__ == "__main__":
     main()
+
 ##############################################################
 #####################                #########################
 #####################   END OF TOOL  #########################
@@ -184,3 +187,4 @@ if __name__ == "__main__":
 #This Tool by Oseid Aldary
 #Have a nice day :)
 #GoodBye
+
