@@ -42,7 +42,10 @@ def scan(server,proto,timeout,verb):
         if qu.empty():
             fin=True
             return
-        port = qu.get(timeout=.5)
+        try:port = qu.get(timeout=.5)
+        except Exception:
+              fin=True
+              return
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) if proto.lower() == "tcp" else socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(int(timeout))
         try:
@@ -87,10 +90,8 @@ def startScan(target,ports,proto,timeout,threadlen,verb):
         THREADS.append(thread)
     signal.signal(signal.SIGINT, handler)
     while not fin: continue
-    for thread in THREADS:
-        print("[*] thread-"+str(thread.ident))
+    for thread in THREADS:thread.join()
     qu.join()
-    print("yes")
 parse = optparse.OptionParser("""
    _____                                   
   / ___/_________ _____  ____  ____  __  __
