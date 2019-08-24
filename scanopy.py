@@ -13,15 +13,27 @@ qu = Queue.Queue()
 done = False
 fin = False
 openPorts = []
+THREADS = []
 threadFin = 0
-fltr = lambda lst,val: list(filter(lambda elem:elem !=val,lst))
 def handler(sig,frame):
     global done
     global threadFin
     done = True
-    while threadFin==0:continue
+    while threadFin !=len(THREADS):continue
+    std.write("[!] Scan Die: reason: aborted by user !!!\n")
+    joinThreads()
     try: qu.task_done()
-    finally:exit(1)
+    finally:
+        printOpenPorts()
+        exit(1)
+def joinThreads():
+    for thread in THREADS:thread.join()
+def printOpenPorts():
+    if openPorts:
+        std.write("\n====================================\n")
+        std.write("[+] OPEND PORTS : [ "+",".join(openPorts)+"]\n")
+    else:std.write("\n====================================\n[-] No Open Ports was detected !!!")
+fltr = lambda lst,val: list(filter(lambda elem:elem !=val,lst))
 def service(port):
     try:return socket.getservbyport(int(port))
     except socket.error: return "??"
@@ -34,6 +46,8 @@ def isFloat(var):
         test = float(var)
         return True
     except ValueError: return False
+
+
 def scan(server,proto,timeout,verb):
     global done
     global fin
@@ -45,8 +59,8 @@ def scan(server,proto,timeout,verb):
         try:
          port = qu.get(timeout=.5)
         except Exception:
-		fin=True
-		return
+            fin=True
+            return
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) if proto.lower() == "tcp" else socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(int(timeout))
         try:
@@ -60,8 +74,7 @@ def scan(server,proto,timeout,verb):
             qu.task_done()
             return
         qu.task_done()
-    threadFin = 1
-    std.write("[!] Scan Die: reason: aborted by user !!!\n")
+    threadFin +=1
 def startScan(target,ports,proto,timeout,threadlen,verb):
     if "," in ports:
         ports = fltr(ports.split(","), "")
@@ -80,7 +93,6 @@ def startScan(target,ports,proto,timeout,threadlen,verb):
             print("[!] Invalid Port selected !!!")
             exit(1)
         ports = [ports]
-    THREADS = []
     for port in ports: qu.put(int(port))
     if len(ports) < threadlen:threadlen=len(ports)
     print("[i] [{}] Threads started".format(threadlen))
@@ -91,7 +103,7 @@ def startScan(target,ports,proto,timeout,threadlen,verb):
         THREADS.append(thread)
     signal.signal(signal.SIGINT, handler)
     while not fin: continue
-    for thread in THREADS:thread.join()
+    joinThreads()
     qu.join()
 
 parse = optparse.OptionParser("""
@@ -170,9 +182,7 @@ def main():
             print("\n".join(default))
         print("\n[~] Scanning ...\n")
         startScan(target, ports, proto, timeout,threads,verb)
-        if openPorts:
-         print("\n====================================")
-         print("[+] OPEND PORTS : [ "+",".join(openPorts)+"]")
+        printOpenPorts()
     else:
         print(parse.usage)
         exit(1)
