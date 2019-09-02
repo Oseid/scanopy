@@ -14,25 +14,24 @@ done = False
 fin = False
 openPorts = []
 THREADS = []
-threadFin = 0
+onc = 0
 def handler(sig,frame):
     global done
-    global threadFin
     done = True
-    while threadFin !=len(THREADS):continue
+    for thread in THREADS:
+        while thread.isAlive():continue
+    if ver:printThreads("abro")
     std.write("[!] Scan Die: reason: aborted by user !!!\n")
     joinThreads()
-    try: qu.task_done()
-    finally:
-        printOpenPorts()
-        exit(1)
+    printOpenPorts()
+    exit(1)
 def joinThreads():
     for thread in THREADS:thread.join()
 def printOpenPorts():
     if openPorts:
         std.write("\n====================================\n")
         std.write("[+] OPEND PORTS : [ "+",".join(openPorts)+"]\n")
-    else:std.write("\n====================================\n[-] No Open Ports was detected !!!")
+    else:std.write("\n====================================\n[-] No Open Ports was detected !!!\n")
 fltr = lambda lst,val: list(filter(lambda elem:elem !=val,lst))
 def service(port):
     try:return socket.getservbyport(int(port))
@@ -46,18 +45,24 @@ def isFloat(var):
         test = float(var)
         return True
     except ValueError: return False
-
+def printThreads(act):
+    global onc
+    if act =="fin" and onc ==0:
+        for thread in THREADS:print("[*] Thread-{} Finshied".format(thread.ident))
+    elif act =="abro" and onc==0:
+        for thread in THREADS:print("[!] Thread-{} Aborted".format(thread.ident))
+    onc+=1
 
 def scan(server,proto,timeout,verb):
     global done
     global fin
-    global threadFin
+    global ver
+    ver=verb
     while not done:
         if qu.empty():
             fin=True
             return
-        try:
-         port = qu.get(timeout=.5)
+        try:port = qu.get()
         except Exception:
             fin=True
             return
@@ -74,7 +79,6 @@ def scan(server,proto,timeout,verb):
             qu.task_done()
             return
         qu.task_done()
-    threadFin +=1
 def startScan(target,ports,proto,timeout,threadlen,verb):
     if "," in ports:
         ports = fltr(ports.split(","), "")
@@ -103,6 +107,7 @@ def startScan(target,ports,proto,timeout,threadlen,verb):
         THREADS.append(thread)
     signal.signal(signal.SIGINT, handler)
     while not fin: continue
+    if verb:printThreads("fin")
     joinThreads()
     qu.join()
 
@@ -129,13 +134,15 @@ parse = optparse.OptionParser("""
           | -d --threads  <threads>   [Enter Number Of Threads]
           |----------------------------------------------------
           | -v --verbose              [Show More Output]
-[EXAMPLES]:=========================================================
+          |---------------------------------------------
+[EXAMPLES]:
           |--------------------------------------------------------------
           | python scanopy.py -t google.com -p 1-1025 -P UDP -T 0.5 -d 10
           |--------------------------------------------------------------
           | python scanopy.py -t google.com -p 21,22,25,443,80 -P TCP -T 2 -d 5
-          |---------------------------------------------------------------------
+          |--------------------------------------------------------------------
 """)
+
 def main():
     sy("cls||clear")
     parse.add_option("-t","--target",dest="target",type=str)
@@ -188,7 +195,6 @@ def main():
         exit(1)
 if __name__ == "__main__":
     main()
-
 ##############################################################
 #####################                #########################
 #####################   END OF TOOL  #########################
@@ -197,4 +203,3 @@ if __name__ == "__main__":
 #This Tool by Oseid Aldary
 #Have a nice day :)
 #GoodBye
-
