@@ -6,18 +6,19 @@
 ######################################
 #CodedBy: Oseid Aldary               #
 ######################################
+######### Libraries & Config #########
 import threading,socket,Queue,optparse,signal
 from sys import stdout as std
 from os import system as sy
 qu = Queue.Queue()
-done = False
-fin = False
 openPorts = []
 THREADS = []
 onc = 0
+finlen = 0
+stop = threading.Event()
 def handler(sig,frame):
-    global done
-    done = True
+    stop.set()
+    finlen=len(THREADS)
     for thread in THREADS:
         while thread.isAlive():continue
     if ver:printThreads("abro")
@@ -26,6 +27,7 @@ def handler(sig,frame):
     printOpenPorts()
     exit(1)
 def joinThreads():
+    stop.set()
     for thread in THREADS:thread.join()
 def printOpenPorts():
     if openPorts:
@@ -48,24 +50,24 @@ def isFloat(var):
 def printThreads(act):
     global onc
     if act =="fin" and onc ==0:
-        for thread in THREADS:print("[*] Thread-{} Finshied".format(thread.ident))
+        for thread in THREADS:print("[*] thread-{} Finshied".format(thread.ident))
     elif act =="abro" and onc==0:
-        for thread in THREADS:print("[!] Thread-{} Aborted".format(thread.ident))
+        for thread in THREADS:print("[!] thread-{} Aborted".format(thread.ident))
     onc+=1
 
-def scan(server,proto,timeout,verb):
-    global done
-    global fin
+def scan(stop,server,proto,timeout,verb):
     global ver
+    global finlen
     ver=verb
-    while not done:
+    while not stop.wait(1):
         if qu.empty():
-            fin=True
-            return
+             finlen+=1
+             break
         try:port = qu.get()
-        except Exception:
-            fin=True
-            return
+        except Exception as e:
+                print e
+                finlen+=1
+                break
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) if proto.lower() == "tcp" else socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         s.settimeout(int(timeout))
         try:
@@ -74,10 +76,7 @@ def scan(server,proto,timeout,verb):
           openPorts.append(str(port)+"\\{} ".format(service(port)))
         except socket.error:
             if verb: std.write("[-] {} :: {} :: {} :: {} :: {} ::=> CLOSE\n".format(server,port, service(port),proto,str(timeout)+"s"))
-        except Exception:
-            qu.put(port)
-            qu.task_done()
-            return
+        except Exception as e:print e;qu.put(port)
         qu.task_done()
 def startScan(target,ports,proto,timeout,threadlen,verb):
     if "," in ports:
@@ -101,15 +100,15 @@ def startScan(target,ports,proto,timeout,threadlen,verb):
     if len(ports) < threadlen:threadlen=len(ports)
     print("[i] [{}] Threads started".format(threadlen))
     for i in range(threadlen):
-        thread = threading.Thread(target=scan,args=(target,proto,timeout,verb))
-        thread.daemon = True
+        thread = threading.Thread(target=scan,args=(stop,target,proto,timeout,verb))
+        thread.setDaemon = True
         thread.start()
         THREADS.append(thread)
     signal.signal(signal.SIGINT, handler)
-    while not fin: continue
-    if verb:printThreads("fin")
-    joinThreads()
+    while len(THREADS) !=finlen:continue
     qu.join()
+    joinThreads()
+    if verb:printThreads("fin")
 
 parse = optparse.OptionParser("""
    _____                                   
@@ -136,11 +135,11 @@ parse = optparse.OptionParser("""
           | -v --verbose              [Show More Output]
           |---------------------------------------------
 [EXAMPLES]:
-          |--------------------------------------------------------------
+          |-------------------------------------------------------------
           | python scanopy.py -t google.com -p 1-1025 -P UDP -T 0.5 -d 10
           |--------------------------------------------------------------
-          | python scanopy.py -t google.com -p 21,22,25,443,80 -P TCP -T 2 -d 5
-          |--------------------------------------------------------------------
+          | python scanopy.py -t google.com -p 21,22,25,80,443,445 -P TCP -T 2 -d 6 -v
+          |----------------------------------------------------------------------------
 """)
 
 def main():
@@ -193,6 +192,7 @@ def main():
     else:
         print(parse.usage)
         exit(1)
+
 if __name__ == "__main__":
     main()
 ##############################################################
