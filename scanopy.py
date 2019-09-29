@@ -7,10 +7,10 @@
 #CodedBy: Oseid Aldary               #
 ######################################
 ######### Libraries & Config #########
-import threading,socket,Queue,optparse,signal
+import threading,socket,queue,optparse,signal
 from sys import stdout as std
 from os import system as sy
-qu = Queue.Queue()
+qu = queue.Queue()
 openPorts = []
 THREADS = []
 onc = 0
@@ -64,8 +64,7 @@ def scan(stop,server,proto,timeout,verb):
              finlen+=1
              break
         try:port = qu.get()
-        except Exception as e:
-                print e
+        except Exception:
                 finlen+=1
                 break
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) if proto.lower() == "tcp" else socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -76,7 +75,7 @@ def scan(stop,server,proto,timeout,verb):
           openPorts.append(str(port)+"\\{} ".format(service(port)))
         except socket.error:
             if verb: std.write("[-] {} :: {} :: {} :: {} :: {} ::=> CLOSE\n".format(server,port, service(port),proto,str(timeout)+"s"))
-        except Exception as e:print e;qu.put(port)
+        except Exception:qu.put(port)
         qu.task_done()
 def startScan(target,ports,proto,timeout,threadlen,verb):
     if "," in ports:
