@@ -7,10 +7,15 @@
 #CodedBy: Oseid Aldary               #
 ######################################
 ######### Libraries & Config #########
-import threading,socket,queue,optparse,signal
-from sys import stdout as std
+import threading,socket,optparse,signal
+from sys import stdout as std,version_info
 from os import system as sy
-qu = queue.Queue()
+if version_info.major == 2:
+    import Queue
+    qu = Queue.Queue()
+else:
+    import queue
+    qu = queue.Queue()
 openPorts = []
 THREADS = []
 onc = 0
@@ -34,7 +39,7 @@ def printOpenPorts():
         std.write("\n====================================\n")
         std.write("[+] OPEND PORTS : [ "+",".join(openPorts)+"]\n")
     else:std.write("\n====================================\n[-] No Open Ports was detected !!!\n")
-fltr = lambda lst,val: list(filter(lambda elem:elem !=val,lst))
+fltr = lambda lst: list(filter(lambda elem:elem if elem.strip() else None,lst))
 def service(port):
     try:return socket.getservbyport(int(port))
     except socket.error: return "??"
@@ -54,7 +59,31 @@ def printThreads(act):
     elif act =="abro" and onc==0:
         for thread in THREADS:print("[!] thread-{} Aborted".format(thread.ident))
     onc+=1
-
+def getPorts(ports):
+            PORTS = []
+            ports = ports.strip()
+            if "," in ports:
+                ports = fltr(ports.split(","))
+                for port in ports:
+                    if "-" not in port:
+                        if port.isdigit():PORTS.append(int(port))
+                    else:
+                            s,e= port.split("-")
+                            if s.isdigit() and e.isdigit():
+                                s,e=int(s),int(e)
+                                if s<e:
+                                    if s >0 and e < 65535:
+                                        PORTS+=range(s, e+1)
+            elif "-" in ports:
+                            s,e = ports.split("-")
+                            if s.isdigit() and e.isdigit():
+                                s,e=int(s),int(e)
+                                if s<e:
+                                    if s >0 and e < 65535:
+                                        PORTS=range(s, e+1)
+            else:
+                if ports.isdigit():PORTS = [int(ports)]
+            return PORTS
 def scan(stop,server,proto,timeout,verb):
     global ver
     global finlen
@@ -78,31 +107,14 @@ def scan(stop,server,proto,timeout,verb):
         except Exception:qu.put(port)
         qu.task_done()
 def startScan(target,ports,proto,timeout,threadlen,verb):
-    if "," in ports:
-        ports = fltr(ports.split(","), "")
-        if not all(ports).numerator or not all( 0<= int(port) <=65535 for port in ports):
-            print("\n[!] Invalid some port selected !!!")
-            exit(1)
-        ports = sorte(ports)
-    elif "-" in ports:
-        start,end = ports.split("-")
-        if not start.isdigit() or not end.isdigit() or int(start) > int(end) or int(start) <0 or int(end) > 65535:
-            print("\n[!] Invalid Ports Range Selected !!!")
-            exit(1)
-        ports = range(int(start),int(end)+1)
-    else:
-        if not ports.strip() or not ports.isdigit():
-            print("[!] Invalid Port selected !!!")
-            exit(1)
-        ports = [ports]
-    for port in ports: qu.put(int(port))
+    for port in ports: qu.put(port)
     if len(ports) < threadlen:threadlen=len(ports)
-    print("[i] [{}] Threads started".format(threadlen))
     for i in range(threadlen):
         thread = threading.Thread(target=scan,args=(stop,target,proto,timeout,verb))
         thread.setDaemon = True
         thread.start()
         THREADS.append(thread)
+    print("[~] [{}] Threads Has Started".format(threadlen))
     signal.signal(signal.SIGINT, handler)
     while len(THREADS) !=finlen:continue
     qu.join()
@@ -116,7 +128,7 @@ parse = optparse.OptionParser("""
  ___/ / /__/ /_/ / / / / /_/ / /_/ / /_/ / 
 /____/\\___/\\__,_/_/ /_/\\____/ .___/\\__, /  
                            /_/    /____/
-[*] Multi-Threaded Port Scanner        1.0
+[*] Multi-Threaded Port Scanner        1.1
 [*] Welcome To Scanopy (^_^)
 
  [OPTIONS]:
@@ -137,10 +149,9 @@ parse = optparse.OptionParser("""
           |-------------------------------------------------------------
           | python scanopy.py -t google.com -p 1-1025 -P UDP -T 0.5 -d 10
           |--------------------------------------------------------------
-          | python scanopy.py -t google.com -p 21,22,25,80,443,445 -P TCP -T 2 -d 6 -v
-          |----------------------------------------------------------------------------
+          | python scanopy.py -t 192.168.1.1 -p 21-25,80,135,443-445 -P TCP -T 2 -d 6 -v
+          |-----------------------------------------------------------------------------
 """)
-
 def main():
     sy("cls||clear")
     parse.add_option("-t","--target",dest="target",type=str)
@@ -157,13 +168,14 @@ def main():
         else:verb = False 
         if opt.ports !=None:
             ports = opt.ports
-            if "," in ports and "-" in ports or not ports.replace("-","",1).replace(",","").isdigit():exit("[!] Invalid ports selected !!!\n")
+            ports = getPorts(ports)
+            if not ports:exit("[!] Invalid Ports Selected !!!")
         else:
             default.append("ports=21,22,23,25,51,80,135,139,443,444,445")
-            ports = "21,22,23,25,51,80,135,139,443,444,445"
+            ports = [21,22,23,25,51,80,135,139,443,444,445]
         if opt.proto !=None:
             proto = opt.proto.lower()
-            if proto not in ("tcp","udp"):exit("[!] Invalid Connection protocol selected !!!\n")
+            if proto not in ("tcp","udp"):exit("[!] Invalid Connection Protocol !!!\n")
         else:
             default.append("protocol=TCP")
             proto="tcp"
@@ -177,7 +189,7 @@ def main():
             timeout=2
         if opt.threads !=None:
                 threads = opt.threads
-                if not threads.isdigit(): exit("[!] Invalid threads Number selected !!!\n")
+                if not threads.isdigit(): exit("[!] Invalid Number Of Threads!!!\n")
                 else: threads = int(threads)
         else:
             default.append("threads=5")
@@ -191,7 +203,6 @@ def main():
     else:
         print(parse.usage)
         exit(1)
-
 if __name__ == "__main__":
     main()
 ##############################################################
