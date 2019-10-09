@@ -37,12 +37,14 @@ def joinThreads():
 def printOpenPorts():
     if openPorts:
         std.write("\n====================================\n")
-        std.write("[+] OPEND PORTS : [ "+",".join(openPorts)+"]\n")
+        std.write("[+] OPEND PORTS : [ "+", ".join(openPorts)+"]\n")
     else:std.write("\n====================================\n[-] No Open Ports was detected !!!\n")
 fltr = lambda lst: list(filter(lambda elem:elem if elem.strip() else None,lst))
-def service(port):
-    try:return socket.getservbyport(int(port))
-    except socket.error: return "??"
+def service(port,ck=False):
+    try:
+        serv = socket.getservbyport(int(port))
+        return "{}".format( serv if not ck else "\\{} ".format(serv))
+    except socket.error:return "{}".format("??" if not ck else "")
 def sorte(LIST):
     ck = set()
     cksort = ck.add
@@ -60,30 +62,28 @@ def printThreads(act):
         for thread in THREADS:print("[!] thread-{} Aborted".format(thread.ident))
     onc+=1
 def getPorts(ports):
-            PORTS = []
-            ports = ports.strip()
-            if "," in ports:
-                ports = fltr(ports.split(","))
-                for port in ports:
-                    if "-" not in port:
-                        if port.isdigit():PORTS.append(int(port))
-                    else:
-                            s,e= port.split("-")
-                            if s.isdigit() and e.isdigit():
-                                s,e=int(s),int(e)
-                                if s<e:
-                                    if s >0 and e < 65535:
-                                        PORTS+=range(s, e+1)
-            elif "-" in ports:
-                            s,e = ports.split("-")
-                            if s.isdigit() and e.isdigit():
-                                s,e=int(s),int(e)
-                                if s<e:
-                                    if s >0 and e < 65535:
-                                        PORTS=range(s, e+1)
+    PORTS = []
+    ports = ports.strip()
+    if "," in ports:
+        ports = fltr(ports.split(","))
+        for port in ports:
+            if "-" not in port:
+                if port.isdigit():PORTS.append(int(port))
             else:
-                if ports.isdigit():PORTS = [int(ports)]
-            return PORTS
+                s,e= port.split("-")
+                if s.isdigit() and e.isdigit():
+                    s,e=int(s),int(e)
+                    if s<e:
+                        if s >=0 and e <= 65535: PORTS+=range(s, e+1)
+    elif "-" in ports:
+        s,e = ports.split("-")
+        if s.isdigit() and e.isdigit():
+            s,e=int(s),int(e)
+            if s<e:
+                if s >= 0 and e <= 65535:PORTS=range(s, e+1)
+    else:
+        if ports.isdigit() and 0 <= int(ports) <= 65535 :PORTS = [int(ports)]
+    return PORTS
 def scan(stop,server,proto,timeout,verb):
     global ver
     global finlen
@@ -101,13 +101,14 @@ def scan(stop,server,proto,timeout,verb):
         try:
           s.connect((server,port))
           std.write("[+] {} :: {} :: {} :: {} :: {} ::=> OPEN\n".format(server,port,service(port),proto,str(timeout)+"s" if verb else ""))
-          openPorts.append(str(port)+"\\{} ".format(service(port)))
+          openPorts.append(str(port)+"{}".format(service(port,ck=True)))
         except socket.error:
             if verb: std.write("[-] {} :: {} :: {} :: {} :: {} ::=> CLOSE\n".format(server,port, service(port),proto,str(timeout)+"s"))
         except Exception:qu.put(port)
         qu.task_done()
 def startScan(target,ports,proto,timeout,threadlen,verb):
-    for port in ports: qu.put(port)
+    ports = list(dict.fromkeys(ports))
+    for port in ports:qu.put(port)
     if len(ports) < threadlen:threadlen=len(ports)
     for i in range(threadlen):
         thread = threading.Thread(target=scan,args=(stop,target,proto,timeout,verb))
@@ -120,7 +121,6 @@ def startScan(target,ports,proto,timeout,threadlen,verb):
     qu.join()
     joinThreads()
     if verb:printThreads("fin")
-
 parse = optparse.OptionParser("""
    _____                                   
   / ___/_________ _____  ____  ____  __  __
@@ -149,8 +149,8 @@ parse = optparse.OptionParser("""
           |-------------------------------------------------------------
           | python scanopy.py -t google.com -p 1-1025 -P UDP -T 0.5 -d 10
           |--------------------------------------------------------------
-          | python scanopy.py -t 192.168.1.1 -p 21-25,80,135,443-445 -P TCP -T 2 -d 6 -v
-          |-----------------------------------------------------------------------------
+          | python scanopy.py -t 192.168.1.1 -p 21-25,80,135,443-445,139 -P TCP -T 2 -d 6 -v
+          |---------------------------------------------------------------------------------
 """)
 def main():
     sy("cls||clear")
