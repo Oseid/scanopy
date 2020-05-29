@@ -6,8 +6,9 @@
 
 **Installation:**
   - git clone https://github.com/Oseid/scanopy.git
-  - cd scanopy.py
-
+  - cd scanopy/
+  
+  
 ***
 **Usage:**
   - you can use it as command line with args options
