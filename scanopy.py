@@ -18,7 +18,7 @@ if not path.isfile("core"+sep+"probes.pkl"):
     print("[!] Error: File[{}] Is Missing Please reinstall the tool to reinstall it!!!".format("core"+sep+"probes.pkl"))
     sys.exit(1)
 if not path.isfile("core"+sep+"services.py"):
-    print("[!] Error: File[{}] Is Missing Please reinstall the tool to reinstall it!!!".format("core"+osep+"services.py"))
+    print("[!] Error: File[{}] Is Missing Please reinstall the tool to reinstall it!!!".format("core"+sep+"services.py"))
     sys.exit(1)
 if not path.isfile("core"+sep+"vslib.py"):
     print("[!] Error: File[{}] Is Missing Please reinstall the tool to reinstall it!!!".format("core"+sep+"vslib.py"))
@@ -255,7 +255,7 @@ class Main(object):
             print(LAYOUT.format(*[opt]+self.modOpt[opt]))
     def show_help(self):
                 if self.autoclean:self.clean()
-                LAYOUT ="  {!s:16} {!s:10} {!s:10}"
+                LAYOUT ="  {!s:16} {!s:10}"
                 write("\n#gScanopy Commands\n#w================\n\n")
                 write("  Command          Description\n  #g-------#w          #g-----------\n")
                 for com,des in self.commands.items():
