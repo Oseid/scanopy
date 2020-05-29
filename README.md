@@ -16,7 +16,7 @@
 
 ***
 **Platforms:**
-  [x] - **Any platform has python2 or python3 installed**
+  - [x] **Any platform has python2 or python3 installed**
 
 ***
 
@@ -26,10 +26,10 @@
     
      ![options](https://user-images.githubusercontent.com/29546157/83279712-30195680-a1de-11ea-89cc-3ed88efd9306.PNG)
 
-  -interactiveMode:
-  
-   ![interactiveMode](https://user-images.githubusercontent.com/29546157/83279811-5b03aa80-a1de-11ea-8887-d0c3a3bdf33d.PNG)
-
+  - interactiveMode:
+    
+     ![interactiveMode](https://user-images.githubusercontent.com/29546157/83279811-5b03aa80-a1de-11ea-8887-d0c3a3bdf33d.PNG)
+     
 ***
 
 **That's All :)**
