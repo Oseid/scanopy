@@ -140,7 +140,6 @@ class scanThread(threading.Thread):
 class Main(object):
     def __init__(self):
         self.interactiveMode = False
-        self.interactiveCtrlC = False
         self.InteractiveExit = False
         self.runner = False
         self.autoclean = False
@@ -179,7 +178,6 @@ class Main(object):
 [*] Multi-Threaded Port Scanner        2.0
 """
     def quit(self,sig,fream):
-      if not self.interactiveCtrlC:
         write("\n#y[#r~#y]#r Aborting#y...\n")
         if not config['verbose'] and not config['debug']: an.done = True
         if config['servScan']:config['servScan'].done = True
@@ -189,7 +187,10 @@ class Main(object):
         write("#r[#y!#r]#y Scan Die#r:#y reason#r:#y Aborted by user #r!!!\n\n")
         if not self.printed:self.printPorts()
         self.abroFlag = True
-      else:sys.exit(1)
+    def interExit(self,sig,fream):
+          print("\n[!] Exit Scanopy script...bye :)")
+          sys.exit(1)
+
     def startThreads(self):
         if config['verbose'] or config['debug']:write("#g[#w~#g]#w Scanning ...\n")
         else:
@@ -204,7 +205,6 @@ class Main(object):
         self.finFlag = True
 
     def printPorts(self):
-      if not self.interactiveCtrlC:
         vv = False
         if config['servScan'] and config['result']['vscan']:
             vv = True
@@ -262,13 +262,12 @@ class Main(object):
                     print(LAYOUT.format(*[com,des]))
     clean = staticmethod(lambda : system("cls||clear"))
     def interactive(self,skip=0):
-       signal.signal(signal.SIGINT, self.quit)
-       signal.signal(signal.SIGTERM,self.quit)
-       if not skip:
+        signal.signal(signal.SIGINT, self.interExit)
+        signal.signal(signal.SIGTERM, self.interExit)
+        if not skip:
           self.clean()
           write(self.banner+"\n")
           write("[*] Welcome To Scanopy Interactive Mode Interface(^_^)\n[*] type 'help' to show help msg.\n\n")
-       try:
         while True:
             cmd = input("Scanopy> ").strip()
             if not cmd:continue
@@ -322,9 +321,9 @@ class Main(object):
             print(" ")
         self.InteractiveExit = True
         print("\n[!] Exit Scanopy script...bye :)")
-       except(KeyboardInterrupt, EOFError):
-        self.interactiveCtrlC = True
-        print("\n[!] Exit Scanopy script...bye :)")
+      # except (KeyboardInterrupt, EOFError):
+      #    print("\n[!] Exit Scanopy script...bye :)")
+      #    sys.exit(1)
     def start(self):
         global event
         global kill
@@ -408,12 +407,13 @@ class Main(object):
         mainThread = threading.Thread(target=self.startThreads)
         mainThread.daemon = True
         mainThread.start()
-        if not self.interactiveMode:
-            signal.signal(signal.SIGINT, self.quit)
-            signal.signal(signal.SIGTERM,self.quit)
+        signal.signal(signal.SIGINT, self.quit)
+        signal.signal(signal.SIGTERM,self.quit)
         while not self.finFlag:
             if self.abroFlag:break
             continue
+        signal.signal(signal.SIGINT, self.interExit)
+        signal.signal(signal.SIGTERM, self.interExit)
         if self.abroFlag:
             if self.interactiveMode:
                 self.interactive(skip=1)
