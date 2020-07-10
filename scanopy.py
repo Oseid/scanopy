@@ -188,15 +188,17 @@ class Main(object):
         self.done = False
         self.autoclean = False
         self.target = ""
-        self.ports = {"tcp":"1,3,7,9,13,17,19,20-23,25,26,37,53,79-82,88,100,106,110-111,113,119,135,139,143-144,179,199,254-255,280,311,389,427,443-445,464,465,497,513-515,543-544,548,554,587,593,625,631,636,646,787,808,873,902,990,993,995,1000,1022,1024-1033,1035-1041,1044,1048-1050,1053-1054,1056,1058-1059,1064-1066,1069,1071,1074,1080,1110,1234,1433,1494,1521,1720,1723,1755,1761,1801,1900,1935,1998,2000-2003,2005,2049,2103,2105,2107,2121,2161,2301,2383,2401,2601,2717,2869,2967,3000-3001,3128,3268,3306,3389,3689-3690,3703,3986,4000-4001,4045,4899,5000-5001,5003,5009,5050-5051,5060,5101,5120,5190,5357,5432,5555,5631,5666,5800,5900-5901,6000-6002,6004,6112,6646,6666,7000,7070,7937-7938,8000,8002,8008-8010,8031,8080-8081,8443,8888,9000-9001,9090,9100,9102,9999-10001,10010,32768,32771,49152-49157,50000", "udp":"7,9,13,17,19,21-23,37,42,49,53,67-69,80,88,111,120,123,135-139,158,161-162,177,192,199,389,407,427,443,445,464,497,500,514-515,517-518,520,593,623,626,631,664,683,800,989-990,996-999,1001,1008,1019,1021-1034,1036,1038-1039,1041,1043-1045,1049,1068,1419,1433-1434,1645-1646,1701,1718-1719,1782,1812-1813,1885,1900,2000,2002,2048-2049,2148,2222-2223,2967,3052,3130,3283,3389,3456,3659,3703,4000,4045,4444,4500,4672,5000-5001,5060,5093,5351,5353,5355,5500,5632,6000-6001,6346,7938,9200,9876,10000,10080,11487,16680,17185,19283,19682,20031,22986,27892,30718,31337,32768-32773,32815,33281,33354,34555,34861-34862,37444,39213,41524,44968,49152-49154,49156,49158-49159,49162-49163,49165-49166,49168,49171-49172,49179-49182,49184-49196,49199-49202,49205,49208-49211,58002,65024"}
+        self.portsByProto = {"tcp":"1,3,7,9,13,17,19,20-23,25,26,37,53,79-82,88,100,106,110-111,113,119,135,139,143-144,179,199,254-255,280,311,389,427,443-445,464,465,497,513-515,543-544,548,554,587,593,625,631,636,646,787,808,873,902,990,993,995,1000,1022,1024-1033,1035-1041,1044,1048-1050,1053-1054,1056,1058-1059,1064-1066,1069,1071,1074,1080,1110,1234,1433,1494,1521,1720,1723,1755,1761,1801,1900,1935,1998,2000-2003,2005,2049,2103,2105,2107,2121,2161,2301,2383,2401,2601,2717,2869,2967,3000-3001,3128,3268,3306,3389,3689-3690,3703,3986,4000-4001,4045,4899,5000-5001,5003,5009,5050-5051,5060,5101,5120,5190,5357,5432,5555,5631,5666,5800,5900-5901,6000-6002,6004,6112,6646,6666,7000,7070,7937-7938,8000,8002,8008-8010,8031,8080-8081,8443,8888,9000-9001,9090,9100,9102,9999-10001,10010,32768,32771,49152-49157,50000", "udp":"7,9,13,17,19,21-23,37,42,49,53,67-69,80,88,111,120,123,135-139,158,161-162,177,192,199,389,407,427,443,445,464,497,500,514-515,517-518,520,593,623,626,631,664,683,800,989-990,996-999,1001,1008,1019,1021-1034,1036,1038-1039,1041,1043-1045,1049,1068,1419,1433-1434,1645-1646,1701,1718-1719,1782,1812-1813,1885,1900,2000,2002,2048-2049,2148,2222-2223,2967,3052,3130,3283,3389,3456,3659,3703,4000,4045,4444,4500,4672,5000-5001,5060,5093,5351,5353,5355,5500,5632,6000-6001,6346,7938,9200,9876,10000,10080,11487,16680,17185,19283,19682,20031,22986,27892,30718,31337,32768-32773,32815,33281,33354,34555,34861-34862,37444,39213,41524,44968,49152-49154,49156,49158-49159,49162-49163,49165-49166,49168,49171-49172,49179-49182,49184-49196,49199-49202,49205,49208-49211,58002,65024"}
         self.protocol = "tcp"
+        self.portsSet = False
+        self.ports = self.portsByProto[self.protocol.lower()]
         self.timeout = "5"
         self.vscan = "false"
         self.threads = "30"
         self.verbose = "false"
         self.debug = "false"
         self.options = ("target", "ports", "protocol", "timeout", "threads", "vscan", "verbose", "debug", "autoclean")
-        self.defaultVal = {"target":self.target, "ports": self.ports, "protocol": self.protocol, "timeout": self.timeout, "threads":self.threads, "vscan":self.vscan, "verbose":self.verbose, "debug": self.debug, "autoclean": self.autoclean}
+        self.defaultVal = {"target":self.target, "ports": (lambda:self.portsByProto[self.protocol.lower()])(), "protocol": self.protocol, "timeout": self.timeout, "threads":self.threads, "vscan":self.vscan, "verbose":self.verbose, "debug": self.debug, "autoclean": self.autoclean}
         self.tarOpt = odict([("target",['yes',"Specify Target hostname or IP",self.target]),
                         ("ports",['optional',"Specify Ports To Scan",self.ports]),
                         ("protocol",['optional', "Specify Connection Protocol",self.protocol]),
@@ -308,6 +310,9 @@ class Main(object):
                 for com,des in self.commands.items():
                     print(LAYOUT.format(*[com,des]))
     clean = staticmethod(lambda : system("cls||clear"))
+    def resetPorts(self):
+        self.portsSet = False
+        return self.portsByProto[self.protocol]
     def interactive(self,skip=0):
        if not skip:
           self.clean()
@@ -353,6 +358,12 @@ class Main(object):
                                 self.autoclean = True if val.lower() == "true" else False
                                 write("[+] {} ==> {}\n".format(option, val))
                                 break
+                            if option == "ports":self.portsSet = True
+                            if option == "protocol":
+                                if not val.lower() in ("tcp", "udp"):
+                                      errmsg("Invalid Connection Protocol Must be 'tcp' or 'udp'")
+                                      break
+                                if not self.portsSet:self.ports = self.portsByProto[val.lower()]
                             write("[+] {} ==> {}\n".format(option, val))
                             exec('self.{} = "{}"'.format(option,val))
                             break
@@ -362,26 +373,24 @@ class Main(object):
                     write("[!] exec <command <args>: eg: ls -alt>\n")
                     continue
                 system(execom)
-            elif cmd.lower() in self.options:
-                if cmd.lower() == "ports":write("[*] ports = {}".format(self.ports if isinstance(self.ports,str) else self.ports[self.protocol] if self.protocol.lower() in ("tcp","udp") else self.ports["tcp"]))
-                else:write("[*] {} = {} ".format(cmd, eval("self.{}".format(cmd.lower()))))
+            elif cmd.lower() in self.options:write("[*] {} = {} ".format(cmd, eval("self.{}".format(cmd.lower()))))
             elif cmd.lower().startswith("reset"):
                 opt = cmd.lower().strip().split(" ")
                 if len(opt) == 2:
-                  opt = opt[1]
+                  opt = opt[1].lower()
                   if opt == "all":
-                    write("[~] Reset All Options...")
+                    write("[~] Reset All Options...\n")
                     for option in self.options:
-                        defval = self.defaultVal[option]
+                        defval = self.defaultVal[option] if option != "ports" else self.resetPorts()
                         exec('self.{} = "{}"'.format(option, defval))
-                        write("  [+] {} ==> {}\n".format(option, defval))
+                        write("  [+] {} ==> {}\n".format(option, defval if option != "ports" else "top-200-ports"))
                     continue
                   if opt not in self.options:
-                    write("[!] Unable to reset option : reason: Unknown option !!!")
+                    write("[!] Unable to reset option : reason: Unknown option !!!\n")
                     continue
-                  defaultValue = self.defaultVal[opt]
+                  defaultValue = self.defaultVal[opt] if opt != "ports" else self.resetPorts()
                   exec('self.{} = "{}"'.format(opt,defaultValue))
-                  write("[~] {} ==> {}\n".format(opt, defaultValue))
+                  write("[~] {} ==> {}\n".format(opt, defaultValue if opt != "ports" else "top-200-ports"))
                   continue
                 write("[*] Usage:  reset <option, all> (e.g: reset target)")
             else:write("[!] Unknown Command: '{}' !!!\n".format(cmd))
@@ -404,7 +413,7 @@ class Main(object):
         self.printed = 0
         target = self.target
         ports = self.ports
-        protocol = self.protocol
+        protocol = self.protocol.lower()
         timeout = self.timeout
         versionScan = self.vscan
         threads = self.threads
@@ -413,11 +422,7 @@ class Main(object):
         if not target.strip():
             errmsg("Target is not selected")
             return False
-        if not protocol.strip() or protocol.lower() not in {"tcp", "udp"}:
-            errmsg("Invalid Connection Protocol Must be 'tcp' or 'udp'")
-            return False
-        protocol = protocol.lower()
-        ports = getPorts(ports[protocol.lower()]) if isinstance(ports, dict) else getPorts(ports)
+        ports =  getPorts(ports)
         if not ports:
             errmsg("Invalid Ports Selected")
             return False
