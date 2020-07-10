@@ -398,6 +398,7 @@ class Main(object):
         print("[*] Exit Scanopy script...bye :)")
         sys.exit(1)
        except (KeyboardInterrupt,EOFError):sys.exit("\n")
+
     def start(self):
         global event
         global kill
@@ -542,6 +543,7 @@ Examples:
      | python scanopy.py -t 192.168.1.1 -p 1-1025,4444 -P TCP -T 2  -s -r 20 -d
      |-------------------------------------------------------------------------
 """)
+
 def main():
     portScan = Main()
     portScan.clean()
@@ -574,6 +576,7 @@ def main():
     else:
         print(parse.usage)
         sys.exit(1)
+
 if __name__ == "__main__":
     main()
 
