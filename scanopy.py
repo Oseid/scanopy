@@ -6,6 +6,7 @@
 ######################################
 #CodedBy: Oseid Aldary               #
 ######################################
+
 import socket,threading,signal,sys,optparse,random,struct
 from time import sleep as se
 from os import path,sep,system
@@ -197,8 +198,8 @@ class Main(object):
         self.threads = "30"
         self.verbose = "false"
         self.debug = "false"
-        self.options = ("target", "ports", "protocol", "timeout", "threads", "vscan", "verbose", "debug", "autoclean")
-        self.defaultVal = {"target":self.target, "ports": (lambda:self.portsByProto[self.protocol.lower()])(), "protocol": self.protocol, "timeout": self.timeout, "threads":self.threads, "vscan":self.vscan, "verbose":self.verbose, "debug": self.debug, "autoclean": self.autoclean}
+        self.options = ("target", "ports", "protocol", "timeout", "threads", "vscan", "verbose", "debug")
+        self.defaultVal = {"target":self.target,"protocol": self.protocol, "timeout": self.timeout, "threads":self.threads, "vscan":self.vscan, "verbose":self.verbose, "debug": self.debug}
         self.tarOpt = odict([("target",['yes',"Specify Target hostname or IP",self.target]),
                         ("ports",['optional',"Specify Ports To Scan",self.ports]),
                         ("protocol",['optional', "Specify Connection Protocol",self.protocol]),
@@ -207,14 +208,14 @@ class Main(object):
                        ("threads", ['optional', "Specify Number Of Threads",self.threads]),
                        ("vscan", ['optional', "Specify 'true' To Enable Service And Version Scan",self.vscan]),
                        ("verbose",['optional',"Specify 'true' To Show Output",self.verbose]),
-                       ("debug", ['optional', "Specify 'true' To Show More Output", self.debug]),
-                       ("autoclean", ["optional","auto clear the screen", "false"])])
+                       ("debug", ['optional', "Specify 'true' To Show More Output", self.debug])])
         self.commands = odict([("help","show this help msg"),
                          ("start","start scanopy scan "),
                          ("options","show scanopy options"),
                          ("set", "set values of options"),
                          ("reset", "reset value of option to default"),
                          ("exec", "execute an external command"),
+                         ("autoclean", "auto clean the screen"),
                          ("exit", "exit scanopy script")])
         self.banner = """
    _____
@@ -287,8 +288,7 @@ class Main(object):
                        ("threads", ['optional', "Specify Number Of Threads",self.threads]),
                        ("vscan", ['optional', "Specify 'true' To Enable Service And Version Scan",self.vscan]),
                        ("verbose",['optional',"Specify 'true' To Show Output",self.verbose]),
-                       ("debug", ['optional', "Specify 'true' To Show More Output", self.debug]),
-                       ("autoclean", ["optional","auto clear the screen", "true" if self.autoclean else "false"])])
+                       ("debug", ['optional', "Specify 'true' To Show More Output", self.debug])])
         write("\n#gTarget Options\n#w==============#g\n\n")
         print(LAYOUT.format("[option]","[RQ]","[Description]","[value]"))
         write("#w  --------        ----       -------------                                      -------\n")
@@ -323,6 +323,9 @@ class Main(object):
             cmd = input("Scanopy> ").strip()
             if not cmd:continue
             elif cmd.lower() == "exit":break
+            elif cmd.lower() == "autoclean":
+                self.autoclean = True if not self.autoclean else False
+                write("[+] autoclean ==> {}\n".format("#w[#gON#w]" if self.autoclean else "#y[#rOFF#y]"))
             elif cmd.lower() in ("cls", "clear"):self.clean()
             elif cmd.lower() == "help":self.show_help()
             elif cmd.lower() == "options":self.show_options()
@@ -340,8 +343,7 @@ class Main(object):
                     elif opt == "threads":write("Usage: set threads <number_of_threads> e.g: set threads 200\n")
                     elif opt == "vscan":write("Usage: set vscan <true, false> e.g: set vscan true")
                     elif opt == "verbose":write("Usage: set verbose <true, false> e.g: set verbose true")
-                    elif opt == "debug":write("Usage: set debug <true, false> e.g: set debug true")
-                    else:write("Usage: set autoclean <true, false> default(<False>)\n")
+                    else:write("Usage: set debug <true, false> e.g: set debug true")
                 elif data.count(" ") != 1:write("[!] Unknown Command: '{}' !!!\n".format(data))
                 else:
                     opt,val = data.split(" ")
@@ -350,14 +352,7 @@ class Main(object):
                         write("[!] Unknown Option: '{}' !!!\n".format(opt))
                         continue
                     for option in self.options:
-                        if opt == option :
-                            if option == "autoclean":
-                                if val.lower() not in ("true", "false"):
-                                    write("[!] Invalid Value: autoclean(true, false): your value({})".format(val))
-                                    break
-                                self.autoclean = True if val.lower() == "true" else False
-                                write("[+] {} ==> {}\n".format(option, val))
-                                break
+                        if opt == option:
                             if option == "ports":self.portsSet = True
                             if option == "protocol":
                                 if not val.lower() in ("tcp", "udp"):
