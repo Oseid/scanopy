@@ -6,7 +6,7 @@ def write(text):
     sys.stdout.write(text.replace("#r", "\033[1;31m").replace("#g","\033[1;32m").replace("#y", "\033[1;33m").replace("#w", "\033[1;37m") + '\033[1;37m')
     sys.stdout.flush()
 class serviceScan(object):
-    def __init__(self, socktimeout=5, socksize=1024, tryy=2,verbose=False):
+    def __init__(self, socktimeout=10, socksize=1024, tryy=2,verbose=False):
         self.socktimeout = socktimeout
         self.socksize = socksize
         self.verbose = verbose
@@ -63,9 +63,9 @@ class serviceScan(object):
                 client.send(payload)
                 while True:
                     if self.done:break
-                    _ = client.recv(self.socksize).decode()
+                    _ = client.recv(self.socksize)
                     if not _: break
-                    data += _
+                    data += _ if sys.version_info.major <=2 else _.decode("ISO-8859-1")
         except Exception as err:
            if self.verbose: write("Try[#{}] {} : {} - {}".format(self.tryy,host, port, err))
            if not self.tryy:self.done = True
@@ -79,9 +79,9 @@ class serviceScan(object):
                 client.sendto(payload, (host, port))
                 while True:
                     if self.done:break
-                    _, addr = client.recvfrom(self.socksize).decode()
+                    _, addr =client.recvfrom(self.socksize)
                     if not _: break
-                    data += _
+                    data += _ if sys.version_info.major <=2 else _.decode("ISO-8859-1")
         except Exception as err:
            if self.verbose: write("Try[#{}] {} : {} - {}\n".format(self.tryy,host, port, err))
            if not self.tryy:self.done = True
