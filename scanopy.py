@@ -27,11 +27,11 @@ if not path.isfile("core"+sep+"vslib.py"):
 if sys.version_info.major <=2:
     import Queue,httplib,urllib
     qu = lambda : Queue.Queue()
-    #input = raw_input
+    input = raw_input
 else:
     import queue,http.client as httplib, urllib.request as urllib
     qu = lambda : queue.Queue()
-    #input = input
+    input = input
 from core.services import Services
 from core.vslib import write,parser,serviceScan
 
@@ -329,7 +329,7 @@ class Scanopy:
         write(self.banner+"\n")
         write("[*] Welcome To Scanopy Interactive Mode Interface(^_^)\n[*] type 'help' to show help msg.\n\n")
         while True:
-            cmd = raw_input("Scanopy> ")
+            cmd = input("Scanopy> ")
             if not cmd:continue
             elif cmd.lower() == "update":
                 write("[~] Checking for updates...\n")
