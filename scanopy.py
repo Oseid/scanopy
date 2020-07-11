@@ -24,6 +24,9 @@ if not path.isfile("core"+sep+"services.py"):
 if not path.isfile("core"+sep+"vslib.py"):
     print("[!] Error: File[{}] Is Missing Please reinstall the tool to reinstall it!!!".format("core"+sep+"vslib.py"))
     sys.exit(1)
+if not path.isfile("core"+sep+"version.txt"):
+    print("[!] Error: File[{}] Is Missing Please reinstall the tool to reinstall it!!!".format("core"+sep+"version.txt"))
+    sys.exit(1)
 if sys.version_info.major <=2:
     import Queue,httplib,urllib
     qu = lambda : Queue.Queue()
@@ -239,7 +242,7 @@ class Scanopy:
       write("\n#r[#y!#r]#y Scan Die#r:#y reason#r:#y Aborted by user #r!!!\n\n")
       if not self.printed:self.printPorts()
       self.abroFlag = True
-     else:sys.exit(1)
+     else:sys.exit("\n")
     def startThreads(self):
         if config['verbose'] or config['debug']:write("#g[#w~#g]#w Scanning ...\n")
         else:
@@ -325,26 +328,27 @@ class Scanopy:
        return False
 
     def interactive(self):
+        signal.signal(signal.SIGINT, self.quit)
+        signal.signal(signal.SIGTERM,self.quit)
         self.clean()
         write(self.banner+"\n")
         write("[*] Welcome To Scanopy Interactive Mode Interface(^_^)\n[*] type 'help' to show help msg.\n\n")
-        while True:
-            cmd = input("Scanopy> ")
+        try:
+         while True:
+            cmd = str(input("Scanopy> "))
             if not cmd:continue
             elif cmd.lower() == "update":
                 write("[~] Checking for updates...\n")
-                if not self.checkInternet():
-                      errmsg("Error: Unable to update  reason: no internet connection")
-                      continue
-                conn = httplib.HTTPSConnection("raw.githubusercontent.com")
-                conn.request("GET", "/Oseid/scanopy/master/core/version.txt")
-                repoVersion = conn.getresponse().read().strip().decode()
-                with open("core"+sep+"version.txt") as ver:
-                      thisVersion = ver.read().strip()
-                if repoVersion == thisVersion:
-                        write("  [*] The tool is up to date!\n")
-                        continue
+                if not self.checkInternet():errmsg("Error: Unable to update  reason: no internet connection")
                 else:
+                  conn = httplib.HTTPSConnection("raw.githubusercontent.com")
+                  conn.request("GET", "/Oseid/scanopy/master/core/version.txt")
+                  repoVersion = conn.getresponse().read().strip().decode()
+                  with open("core"+sep+"version.txt") as ver:
+                       thisVersion = ver.read().strip()
+                  if repoVersion == thisVersion:
+                        write("  [*] The tool is up to date!\n")
+                  else:
                     ask = input("  [?] An update has been found, do you want to update now?(Y:n)> ").strip()
                     while not ask:
                              ask = input("    [!] please Answer with 'y' for yes or 'n' for no ?> ").strip()
@@ -432,8 +436,10 @@ class Scanopy:
                 write("[*] Usage:  reset <option, all> (e.g: reset target)")
             else:write("[!] Unknown Command: '{}' !!!\n".format(cmd))
             print(" ")
-        sys.exit(1)
-
+         sys.exit(1)
+        except EOFError:
+            se(5)
+            pass
     def start(self):
         global event
         global kill
@@ -520,8 +526,6 @@ class Scanopy:
         mainThread = threading.Thread(target=self.startThreads)
         mainThread.daemon = True
         mainThread.start()
-        signal.signal(signal.SIGINT, self.quit)
-        signal.signal(signal.SIGTERM,self.quit)
         while not self.finFlag:
             if self.abroFlag:break
         if self.abroFlag:
@@ -592,8 +596,7 @@ def main():
     (opt,args) = parse.parse_args()
     if opt.interactive:
         scanopy.interactiveMode = True
-        try:scanopy.interactive()
-        except (KeyboardInterrupt, EOFError, SystemExit):sys.exit(1)
+        scanopy.interactive()
     elif opt.target !=None:
         scanopy.target = opt.target
         if opt.verbose:scanopy.verbose = "true"
