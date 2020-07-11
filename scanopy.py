@@ -356,8 +356,9 @@ class Main(object):
                          script = urllib.urlopen("https://raw.githubusercontent.com/Oseid/scanopy/master/scanopy.py").read()
                          with open("scanopy.py", "wb") as  scanopy:
                                scanopy.write(script)
-
-                         write("  [+] Successfully updated :)\n\n[*] Please relaunch tool to apply :)")
+                         with open("core"+sep+"version.txt", "w") as ver:
+                               ver.write(repoVersion)
+                         write("  [+] Successfully updated :)\n\n[*] Please relaunch tool to apply :)\n")
                          break
                     else:write("\n[*] Ok Maybe later :)\n")
             elif cmd.lower() == "exit":
