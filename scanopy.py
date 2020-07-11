@@ -302,6 +302,7 @@ class Main(object):
         write("#g  --------        ----       -------------                                      -------\n")
         for opt in self.modOpt.keys():
             print(LAYOUT.format(*[opt]+self.modOpt[opt]))
+
     def show_help(self):
                 if self.autoclean:self.clean()
                 LAYOUT ="  {!s:16} {!s:10}"
@@ -310,9 +311,11 @@ class Main(object):
                 for com,des in self.commands.items():
                     print(LAYOUT.format(*[com,des]))
     clean = staticmethod(lambda : system("cls||clear"))
+
     def resetPorts(self):
         self.portsSet = False
         return self.portsByProto[self.protocol]
+
     def checkInternet(self):
        try:
          socket.create_connection((socket.gethostbyname("www.google.com"), 80), 2)
