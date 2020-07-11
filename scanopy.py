@@ -25,11 +25,11 @@ if not path.isfile("core"+sep+"vslib.py"):
     print("[!] Error: File[{}] Is Missing Please reinstall the tool to reinstall it!!!".format("core"+sep+"vslib.py"))
     sys.exit(1)
 if sys.version_info.major <=2:
-    import Queue,urllib
+    import Queue,httplib
     qu = lambda : Queue.Queue()
     input = raw_input
 else:
-    import queue,urllib.request as urllib
+    import queue,http.client  as httplib
     qu = lambda : queue.Queue()
     input = input
 from core.services import Services
@@ -334,14 +334,15 @@ class Main(object):
             cmd = input("Scanopy> ").strip()
             if not cmd:continue
             elif cmd.lower() == "update":
-                if not self.checkInternet():
-                      errmsg("Error: Unable to update reason: no internet connection")
-                      continue
                 write("[~] Checking for updates...\n")
-                repoVersion = urllib.urlopen("https://raw.githubusercontent.com/Oseid/scanopy/master/core/version.txt").read().strip()
+                if not self.checkInternet():
+                      errmsg("Error: Unable to update  reason: no internet connection")
+                      continue
+                conn = httplib.HTTPSConnection("raw.githubusercontent.com")
+                conn.request("GET", "/Oseid/scanopy/master/core/version.txt")
+                repoVersion = conn.getresponse().read().strip().decode()
                 with open("core"+sep+"version.txt") as ver:
                       thisVersion = ver.read().strip()
-                print('repo', repoVersion,'this',thisVersion)
                 if repoVersion == thisVersion:
                         write("  [*] The tool is up to date!\n")
                         continue
