@@ -27,11 +27,11 @@ if not path.isfile("core"+sep+"vslib.py"):
 if sys.version_info.major <=2:
     import Queue,httplib,urllib
     qu = lambda : Queue.Queue()
-    input = raw_input
+    #input = raw_input
 else:
     import queue,http.client as httplib, urllib.request as urllib
     qu = lambda : queue.Queue()
-    input = input
+    #input = input
 from core.services import Services
 from core.vslib import write,parser,serviceScan
 
@@ -182,11 +182,11 @@ class scanThread(threading.Thread):
                 break
             config['ports'].task_done()
 
-class Main(object):
+class Scanopy:
     def __init__(self):
         self.interactiveMode = False
         self.runner = False
-        self.done = False
+        self.cmdCtrlC = True
         self.autoclean = False
         self.target = ""
         self.portsByProto = {"tcp":"1,3,7,9,13,17,19,20-23,25,26,37,53,79-82,88,100,106,110-111,113,119,135,139,143-144,179,199,254-255,280,311,389,427,443-445,464,465,497,513-515,543-544,548,554,587,593,625,631,636,646,787,808,873,902,990,993,995,1000,1022,1024-1033,1035-1041,1044,1048-1050,1053-1054,1056,1058-1059,1064-1066,1069,1071,1074,1080,1110,1234,1433,1494,1521,1720,1723,1755,1761,1801,1900,1935,1998,2000-2003,2005,2049,2103,2105,2107,2121,2161,2301,2383,2401,2601,2717,2869,2967,3000-3001,3128,3268,3306,3389,3689-3690,3703,3986,4000-4001,4045,4899,5000-5001,5003,5009,5050-5051,5060,5101,5120,5190,5357,5432,5555,5631,5666,5800,5900-5901,6000-6002,6004,6112,6646,6666,7000,7070,7937-7938,8000,8002,8008-8010,8031,8080-8081,8443,8888,9000-9001,9090,9100,9102,9999-10001,10010,32768,32771,49152-49157,50000", "udp":"7,9,13,17,19,21-23,37,42,49,53,67-69,80,88,111,120,123,135-139,158,161-162,177,192,199,389,407,427,443,445,464,497,500,514-515,517-518,520,593,623,626,631,664,683,800,989-990,996-999,1001,1008,1019,1021-1034,1036,1038-1039,1041,1043-1045,1049,1068,1419,1433-1434,1645-1646,1701,1718-1719,1782,1812-1813,1885,1900,2000,2002,2048-2049,2148,2222-2223,2967,3052,3130,3283,3389,3456,3659,3703,4000,4045,4444,4500,4672,5000-5001,5060,5093,5351,5353,5355,5500,5632,6000-6001,6346,7938,9200,9876,10000,10080,11487,16680,17185,19283,19682,20031,22986,27892,30718,31337,32768-32773,32815,33281,33354,34555,34861-34862,37444,39213,41524,44968,49152-49154,49156,49158-49159,49162-49163,49165-49166,49168,49171-49172,49179-49182,49184-49196,49199-49202,49205,49208-49211,58002,65024"}
@@ -228,7 +228,7 @@ class Main(object):
 [*] Multi-Threaded Port Scanner        2.0
 """
     def quit(self,sig,fream):
-     if not self.done:
+     if not self.cmdCtrlC:
       if not config['verbose'] and not config['debug']: an.done = True
       if config['servScan']:config['servScan'].done = True
       kill()
@@ -239,7 +239,7 @@ class Main(object):
       write("\n#r[#y!#r]#y Scan Die#r:#y reason#r:#y Aborted by user #r!!!\n\n")
       if not self.printed:self.printPorts()
       self.abroFlag = True
-     else:sys.exit("\n")
+     else:sys.exit(1)
     def startThreads(self):
         if config['verbose'] or config['debug']:write("#g[#w~#g]#w Scanning ...\n")
         else:
@@ -324,14 +324,12 @@ class Main(object):
        except socket.error: pass
        return False
 
-    def interactive(self,skip=0):
-       if not skip:
-          self.clean()
-          write(self.banner+"\n")
-          write("[*] Welcome To Scanopy Interactive Mode Interface(^_^)\n[*] type 'help' to show help msg.\n\n")
-       try:
+    def interactive(self):
+        self.clean()
+        write(self.banner+"\n")
+        write("[*] Welcome To Scanopy Interactive Mode Interface(^_^)\n[*] type 'help' to show help msg.\n\n")
         while True:
-            cmd = input("Scanopy> ").strip()
+            cmd = raw_input("Scanopy> ")
             if not cmd:continue
             elif cmd.lower() == "update":
                 write("[~] Checking for updates...\n")
@@ -370,7 +368,10 @@ class Main(object):
             elif cmd.lower() in ("cls", "clear"):self.clean()
             elif cmd.lower() == "help":self.show_help()
             elif cmd.lower() == "options":self.show_options()
-            elif cmd.lower() == "start":self.start()
+            elif cmd.lower() == "start":
+                self.cmdCtrlC = False
+                self.start()
+                self.cmdCtrlC = True
             elif cmd.lower().startswith("set"):
                 data = "".join(cmd.strip().split("set")).strip()
                 if not data:write("Usage: set <Option> <Value>\n")
@@ -432,7 +433,6 @@ class Main(object):
             else:write("[!] Unknown Command: '{}' !!!\n".format(cmd))
             print(" ")
         sys.exit(1)
-       except (KeyboardInterrupt,EOFError):sys.exit("\n")
 
     def start(self):
         global event
@@ -520,15 +520,12 @@ class Main(object):
         mainThread = threading.Thread(target=self.startThreads)
         mainThread.daemon = True
         mainThread.start()
-        self.done = False
         signal.signal(signal.SIGINT, self.quit)
         signal.signal(signal.SIGTERM,self.quit)
         while not self.finFlag:
             if self.abroFlag:break
-            continue
-        self.done = True
         if self.abroFlag:
-          if self.interactiveMode:self.interactive(skip=1)
+          if self.interactiveMode:return
           else:sys.exit(1)
         if debug:
             for thread in self.THREADS:write("#g[#w*#g]#w Thread-{} : has #gFinshied\n".format(thread.ident))
@@ -539,7 +536,7 @@ class Main(object):
         self.printed+=1
         mainThread.join()
         config['ports'].join()
-        if self.interactiveMode:self.interactive(skip=1)
+        if self.interactiveMode:return
         else:sys.exit(1)
 
 parse = optparse.OptionParser("""
@@ -578,11 +575,10 @@ Examples:
      | python scanopy.py -t 192.168.1.1 -p 1-1025,4444 -P TCP -T 2  -s -r 20 -d
      |-------------------------------------------------------------------------
 """)
-
 def main():
-    portScan = Main()
-    portScan.clean()
-    write(portScan.banner + "\n")
+    scanopy = Scanopy()
+    scanopy.clean()
+    write(scanopy.banner + "\n")
     write("[*] Welcome To Scanopy (^_^)\n")
     parse.add_option("-i", "--interactive", action="store_true", dest="interactive",default=False)
     parse.add_option("-t","--target",dest="target",type=str, help="set target to scan")
@@ -595,26 +591,25 @@ def main():
     parse.add_option("-v","--verbose",action="store_true",dest="verbose",default=False, help="show Output")
     (opt,args) = parse.parse_args()
     if opt.interactive:
-        portScan.interactiveMode = True
-        portScan.interactive()
-
+        scanopy.interactiveMode = True
+        try:scanopy.interactive()
+        except (KeyboardInterrupt, EOFError, SystemExit):sys.exit(1)
     elif opt.target !=None:
-        portScan.target = opt.target
-        if opt.verbose:portScan.verbose = "true"
-        if opt.debug:portScan.debug = "true"
-        if opt.ports !=None:portScan.ports = opt.ports
-        if opt.protocol !=None:portScan.protocol = opt.protocol
-        if opt.timeout !=None:portScan.timeout = opt.timeout
-        if opt.vscan:portScan.vscan = 'true'
-        if opt.threads !=None:portScan.threads = opt.threads
-        portScan.start()
+        scanopy.target = opt.target
+        if opt.verbose:scanopy.verbose = "true"
+        if opt.debug:scanopy.debug = "true"
+        if opt.ports !=None:scanopy.ports = opt.ports
+        if opt.protocol !=None:scanopy.protocol = opt.protocol
+        if opt.timeout !=None:scanopy.timeout = opt.timeout
+        if opt.vscan:scanopy.vscan = 'true'
+        if opt.threads !=None:scanopy.threads = opt.threads
+        scanopy.cmdCtrlC = False
+        scanopy.start()
     else:
         print(parse.usage)
         sys.exit(1)
-
 if __name__ == "__main__":
     main()
-
 ##############################################################
 #####################                #########################
 #####################   END OF TOOL  #########################
