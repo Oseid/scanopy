@@ -29,7 +29,7 @@ if sys.version_info.major <=2:
     qu = lambda : Queue.Queue()
     input = raw_input
 else:
-    import queue,http.client as httplib, urllib.client as urllib
+    import queue,http.client as httplib, urllib.request as urllib
     qu = lambda : queue.Queue()
     input = input
 from core.services import Services
@@ -358,7 +358,7 @@ class Main(object):
                                scanopy.write(script)
                          with open("core"+sep+"version.txt", "w") as ver:
                                ver.write(repoVersion)
-                         write("  [+] Successfully updated :)\n\n[*] Please relaunch tool to apply :)\n")
+                         write("  [+] Successfully updated :)\n\n[*] Please relaunch tool to apply updates :)\n")
                          break
                     else:write("\n[*] Ok Maybe later :)\n")
             elif cmd.lower() == "exit":
