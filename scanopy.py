@@ -25,11 +25,11 @@ if not path.isfile("core"+sep+"vslib.py"):
     print("[!] Error: File[{}] Is Missing Please reinstall the tool to reinstall it!!!".format("core"+sep+"vslib.py"))
     sys.exit(1)
 if sys.version_info.major <=2:
-    import Queue,httplib
+    import Queue,httplib,urllib
     qu = lambda : Queue.Queue()
     input = raw_input
 else:
-    import queue,http.client  as httplib
+    import queue,http.client as httplib, urllib.client as urllib
     qu = lambda : queue.Queue()
     input = input
 from core.services import Services
@@ -347,18 +347,17 @@ class Main(object):
                         write("  [*] The tool is up to date!\n")
                         continue
                 else:
-                    ask = input("[?] An update has been found, do you want to update now?(Y:n)> ").strip()
+                    ask = input("  [?] An update has been found, do you want to update now?(Y:n)> ").strip()
                     while not ask:
-                             ask = input("\n [!] please ansawer by 'y' for yes or 'n' for no ?> ").strip()
+                             ask = input("\n    [!] please answer by 'y' for yes or 'n' for no ?> ").strip()
                     if ask.lower() in ("yes","y"):
                          write("\n[~] Updating...please wait\n")
                          script = urllib.urlopen("https://raw.githubusercontent.com/Oseid/scanopy/master/scanopy.py").read()
                          with open("scanopy.py", "wb") as  scanopy:
                                scanopy.write(script)
 
-                         write("  [+] Successfully updated :)\n\n[*] Please relaunch tool to apply :)")
+                         write("  [+] Successfully updated :)\n\n[*] Please relaunch tool to apply :)\n")
                          break
-                script = urllib.urlopen("https://raw.githubusercontent.com/Oseid/scanopy/master/scanopy.py").read()
             elif cmd.lower() == "exit":
                         print("[*] Exit Scanopy script...bye :)")
                         break
