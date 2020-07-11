@@ -216,6 +216,7 @@ class Main(object):
                          ("reset", "reset value of option to default"),
                          ("exec", "execute an external command"),
                          ("autoclean", "auto clean the screen"),
+                         ("update", "check for updates"),
                          ("exit", "exit scanopy script")])
         self.banner = """
    _____
@@ -336,19 +337,20 @@ class Main(object):
                 if not self.checkInternet():
                       errmsg("Error: Unable to update reason: no internet connection")
                       continue
-                write("[~] Checking for updates...")
+                write("[~] Checking for updates...\n")
                 repoVersion = urllib.urlopen("https://raw.githubusercontent.com/Oseid/scanopy/master/core/version.txt").read().strip()
-                with open("core"+sep+"version.txt") as version:
-                     thisVersion = version.read().strip()
+                with open("core"+sep+"version.txt") as ver:
+                      thisVersion = ver.read().strip()
+                print('repo', repoVersion,'this',thisVersion)
                 if repoVersion == thisVersion:
                         write("  [*] The tool is up to date!\n")
                         continue
                 else:
                     ask = input("[?] An update has been found, do you want to update now?(Y:n)> ").strip()
                     while not ask:
-                             ask = input(" [!] please ansawer by 'y' for yes or 'n' for no ?> ").strip()
+                             ask = input("\n [!] please ansawer by 'y' for yes or 'n' for no ?> ").strip()
                     if ask.lower() in ("yes","y"):
-                         write("\m[~] Updating...please wait")
+                         write("\n[~] Updating...please wait\n")
                          script = urllib.urlopen("https://raw.githubusercontent.com/Oseid/scanopy/master/scanopy.py").read()
                          with open("scanopy.py", "wb") as  scanopy:
                                scanopy.write(script)
