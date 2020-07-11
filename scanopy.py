@@ -349,7 +349,7 @@ class Main(object):
                 else:
                     ask = input("  [?] An update has been found, do you want to update now?(Y:n)> ").strip()
                     while not ask:
-                             ask = input("    [!] please ansawer by 'y' for yes or 'n' for no ?> ").strip()
+                             ask = input("    [!] please Answer with 'y' for yes or 'n' for no ?> ").strip()
                              #write(" ")
                     if ask.lower() in ("yes","y"):
                          write("\n[~] Updating...please wait\n")
