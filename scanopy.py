@@ -25,11 +25,11 @@ if not path.isfile("core"+sep+"vslib.py"):
     print("[!] Error: File[{}] Is Missing Please reinstall the tool to reinstall it!!!".format("core"+sep+"vslib.py"))
     sys.exit(1)
 if sys.version_info.major <=2:
-    import Queue
+    import Queue,urllib
     qu = lambda : Queue.Queue()
     input = raw_input
 else:
-    import queue
+    import queue,urllib.request as urllib
     qu = lambda : queue.Queue()
     input = input
 from core.services import Services
@@ -313,6 +313,13 @@ class Main(object):
     def resetPorts(self):
         self.portsSet = False
         return self.portsByProto[self.protocol]
+    def checkInternet(self):
+       try:
+         socket.create_connection((socket.gethostbyname("www.google.com"), 80), 2)
+         return True
+       except socket.error: pass
+       return False
+
     def interactive(self,skip=0):
        if not skip:
           self.clean()
@@ -322,7 +329,33 @@ class Main(object):
         while True:
             cmd = input("Scanopy> ").strip()
             if not cmd:continue
-            elif cmd.lower() == "exit":break
+            elif cmd.lower() == "update":
+                if not self.checkInternet():
+                      errmsg("Error: Unable to update reason: no internet connection")
+                      continue
+                write("[~] Checking for updates...")
+                repoVersion = urllib.urlopen("https://raw.githubusercontent.com/Oseid/scanopy/master/core/version.txt").read().strip()
+                with open("core"+sep+"version.txt") as version:
+                     thisVersion = version.read().strip()
+                if repoVersion == thisVersion:
+                        write("  [*] The tool is up to date!\n")
+                        continue
+                else:
+                    ask = input("[?] An update has been found, do you want to update now?(Y:n)> ").strip()
+                    while not ask:
+                             ask = input(" [!] please ansawer by 'y' for yes or 'n' for no ?> ").strip()
+                    if ask.lower() in ("yes","y"):
+                         write("\m[~] Updating...please wait")
+                         script = urllib.urlopen("https://raw.githubusercontent.com/Oseid/scanopy/master/scanopy.py").read()
+                         with open("scanopy.py", "wb") as  scanopy:
+                               scanopy.write(script)
+
+                         write("  [+] Successfully updated :)\n\n[*] Please relaunch tool to apply :)")
+                         break
+                script = urllib.urlopen("https://raw.githubusercontent.com/Oseid/scanopy/master/scanopy.py").read()
+            elif cmd.lower() == "exit":
+                        print("[*] Exit Scanopy script...bye :)")
+                        break
             elif cmd.lower() == "autoclean":
                 self.autoclean = True if not self.autoclean else False
                 write("[+] autoclean ==> {}\n".format("#w[#gON#w]" if self.autoclean else "#y[#rOFF#y]"))
@@ -390,7 +423,6 @@ class Main(object):
                 write("[*] Usage:  reset <option, all> (e.g: reset target)")
             else:write("[!] Unknown Command: '{}' !!!\n".format(cmd))
             print(" ")
-        print("[*] Exit Scanopy script...bye :)")
         sys.exit(1)
        except (KeyboardInterrupt,EOFError):sys.exit("\n")
 
