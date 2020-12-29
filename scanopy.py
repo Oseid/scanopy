@@ -607,7 +607,9 @@ def main():
         if opt.vscan:scanopy.vscan = 'true'
         if opt.threads !=None:scanopy.threads = opt.threads
         scanopy.cmdCtrlC = False
-        scanopy.start()
+        try:scanopy.start()
+        except(KeyboardInterrupt, EOFError):
+              scanopy.quit(1,2)
     else:
         print(parse.usage)
         sys.exit(1)
