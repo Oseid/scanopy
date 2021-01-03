@@ -7,7 +7,7 @@
 #CodedBy: Oseid Aldary               #
 ######################################
 
-import socket,threading,signal,sys,optparse,random,struct
+import socket,threading,signal,sys,random,struct
 from time import sleep as se
 from os import path,sep,system
 from collections import OrderedDict as odict
@@ -156,41 +156,32 @@ class scanThread(threading.Thread):
             if config['ports'].empty():
                 lock.release()
                 break
-            try:port = config['ports'].get()
-            except Exception:break
+            port = config['ports'].get()
             lock.release()
             sock = self.createSocket()
             if config['protocol']=="tcp":result = PortScan(sock, config['target'], port, config['timeout']).tcpScan
             else:result = PortScan(sock, config['target'], port, config['timeout']).udpScan
             if result:
-                if config['debug']:config['result']['all'][port]="open"
-                else:config['result']['open'].append(port)
-                if config['verbose'] or config['debug']:
-                    if not isKilled():write("#g[#w+#g] {}#w:#g{}#w{}/#g{}#w :#g OPEN\n".format(config['target'], port,getService(port), config['protocol']))
+                config['result']['open'].append(port)
+                if config['verbose']:write("#g[#w+#g] {}#w:#g{}#w{}/#g{}#w :#g OPEN\n".format(config['target'], port,getService(port), config['protocol']))
                 if config['servScan']:
                     if config['verbose']:write("[~] Scanning for [{}] Service Info...\n".format(port))
-                    info =config['servScan'].scan(config['target'], port, config['protocol'])
+                    info  =config['servScan'].scan(config['target'], port, config['protocol'])
                     if info:
                         config['result']['vscan'][port]=parser(info)
-                        if config['debug']:del config['result']['all'][port]
-                        else:config['result']['open'].remove(port)
-                config['result']['all'][0]=1
+                        config['result']['open'].remove(port)
             else:
-                if config['debug']:config['result']['all'][port]="close"
-                else:config['result']['close'].append(port)
-                if config['verbose'] or config['debug']:
-                    if not isKilled():write("#y[#r-#y] {}#w:#r{}#y{}#y/#r{}#y :#r CLOSED\n".format(config['target'], port, getService(port, status="close"), config['protocol']))
-            if isKilled():
-                config['ret']+=1
-                break
+                config['result']['close']+=1
+                if config['verbose']:write("#y[#r-#y] {}#w:#r{}#y{}#y/#r{}#y :#r CLOSED\n".format(config['target'], port, getService(port, status="close"), config['protocol']))
+            if isKilled():break
             config['ports'].task_done()
+        config['ret']+=1
 
 class Scanopy:
     def __init__(self):
-        self.interactiveMode = False
         self.runner = False
-        self.cmdCtrlC = True
         self.autoclean = False
+        self.cmdCtrlC = True
         self.target = ""
         self.portsByProto = {"tcp":"1,3,7,9,13,17,19,20-23,25,26,37,53,79-82,88,100,106,110-111,113,119,135,139,143-144,179,199,254-255,280,311,389,427,443-445,464,465,497,513-515,543-544,548,554,587,593,625,631,636,646,787,808,873,902,990,993,995,1000,1022,1024-1033,1035-1041,1044,1048-1050,1053-1054,1056,1058-1059,1064-1066,1069,1071,1074,1080,1110,1234,1433,1494,1521,1720,1723,1755,1761,1801,1900,1935,1998,2000-2003,2005,2049,2103,2105,2107,2121,2161,2301,2383,2401,2601,2717,2869,2967,3000-3001,3128,3268,3306,3389,3689-3690,3703,3986,4000-4001,4045,4899,5000-5001,5003,5009,5050-5051,5060,5101,5120,5190,5357,5432,5555,5631,5666,5800,5900-5901,6000-6002,6004,6112,6646,6666,7000,7070,7937-7938,8000,8002,8008-8010,8031,8080-8081,8443,8888,9000-9001,9090,9100,9102,9999-10001,10010,32768,32771,49152-49157,50000", "udp":"7,9,13,17,19,21-23,37,42,49,53,67-69,80,88,111,120,123,135-139,158,161-162,177,192,199,389,407,427,443,445,464,497,500,514-515,517-518,520,593,623,626,631,664,683,800,989-990,996-999,1001,1008,1019,1021-1034,1036,1038-1039,1041,1043-1045,1049,1068,1419,1433-1434,1645-1646,1701,1718-1719,1782,1812-1813,1885,1900,2000,2002,2048-2049,2148,2222-2223,2967,3052,3130,3283,3389,3456,3659,3703,4000,4045,4444,4500,4672,5000-5001,5060,5093,5351,5353,5355,5500,5632,6000-6001,6346,7938,9200,9876,10000,10080,11487,16680,17185,19283,19682,20031,22986,27892,30718,31337,32768-32773,32815,33281,33354,34555,34861-34862,37444,39213,41524,44968,49152-49154,49156,49158-49159,49162-49163,49165-49166,49168,49171-49172,49179-49182,49184-49196,49199-49202,49205,49208-49211,58002,65024"}
         self.protocol = "tcp"
@@ -200,9 +191,8 @@ class Scanopy:
         self.vscan = "false"
         self.threads = "30"
         self.verbose = "false"
-        self.debug = "false"
-        self.options = ("target", "ports", "protocol", "timeout", "threads", "vscan", "verbose", "debug")
-        self.defaultVal = {"target":self.target,"protocol": self.protocol, "timeout": self.timeout, "threads":self.threads, "vscan":self.vscan, "verbose":self.verbose, "debug": self.debug}
+        self.options = ("target", "ports", "protocol", "timeout", "threads", "vscan", "verbose")
+        self.defaultVal = {"target":self.target,"protocol": self.protocol, "timeout": self.timeout, "threads":self.threads, "vscan":self.vscan, "verbose":self.verbose}
         self.tarOpt = odict([("target",['yes',"Specify Target hostname or IP",self.target]),
                         ("ports",['optional',"Specify Ports To Scan",self.ports]),
                         ("protocol",['optional', "Specify Connection Protocol",self.protocol]),
@@ -210,8 +200,7 @@ class Scanopy:
         self.modOpt = odict([
                        ("threads", ['optional', "Specify Number Of Threads",self.threads]),
                        ("vscan", ['optional', "Specify 'true' To Enable Service And Version Scan",self.vscan]),
-                       ("verbose",['optional',"Specify 'true' To Show Output",self.verbose]),
-                       ("debug", ['optional', "Specify 'true' To Show More Output", self.debug])])
+                       ("verbose",['optional',"Specify 'true' To Show Output",self.verbose])])
         self.commands = odict([("help","show this help msg"),
                          ("start","start scanopy scan "),
                          ("options","show scanopy options"),
@@ -228,23 +217,26 @@ class Scanopy:
  ___/ / /__/ /_/ / / / / /_/ / /_/ / /_/ /
 /____/\\___/\\__,_/_/ /_/\\____/ .___/\\__, /
                            /_/    /____/
-[*] Multi-Threaded Port Scanner        2.0
+[*] Welcome To Scanopy                 2.0
+[*] Multi-Threaded Port Scanner
+[!] Type 'help' to show scanopy commands
+
 """
     def quit(self,sig,fream):
      if not self.cmdCtrlC:
-      if not config['verbose'] and not config['debug']: an.done = True
+      if not config['verbose']: an.done = True
       if config['servScan']:config['servScan'].done = True
       kill()
       write("\n#y[#r~#y]#r Aborting#y...\n")
       while config['ret'] != config['threads']: continue
-      if config['debug'] and self.printed <2:
+      if config['verbose'] and self.printed <2:
           for t in self.THREADS:write("#y[#r!#y] Thread-{} :#y Aborted #r!\n".format(t.ident))
       write("\n#r[#y!#r]#y Scan Die#r:#y reason#r:#y Aborted by user #r!!!\n\n")
       if not self.printed:self.printPorts()
       self.abroFlag = True
      else:sys.exit("\n")
     def startThreads(self):
-        if config['verbose'] or config['debug']:write("#g[#w~#g]#w Scanning ...\n")
+        if config['verbose']:write("#g[#w~#g]#w Scanning ...\n")
         else:
             global an
             an = anym("Scanning[{}]".format(config['target']))
@@ -269,18 +261,10 @@ class Scanopy:
                     write("    [+] {} : {}\n".format(key.strip(), val.strip()))
                 write("\n")
         write("\n")
-        if not config['debug'] and config['result']['close']:write("[*] Not Shown: [{}] closed ports.\n\n".format(len(config['result']['close'])))
-        if vv:
-            if  config['debug'] and config['result']['all'][0] or config['result']['open']:write("[*] Other Ports Has Found.\n\n")
-        if config['result']['open'] or config['debug'] and config['result']['all'][0]:
+        if not config['verbose'] and config['result']['close']:write("[*] Not Shown: [{}] closed ports.\n\n".format(config['result']['close']))
+        if config['result']['open']:
             write("PORT\t STATE\t SERVICE\n")
-            if config['debug']:
-                for port,state in config['result']['all'].items()[1:]:write("{}/{}\t {}\t {}\n".format(port,config['protocol'],state,getService(port, raw=True)))
-            if config["result"]['open']:
-                for port in config['result']['open']:write("{}/{}\t {}\t {}\n".format(port,config['protocol'],"OPEN",getService(port, raw=True)))
-        if config['debug']:
-            if config["result"]['close']:
-                for port in config['result']['close']:write("{}/{}\t {}\t {}\n".format(port,config['protocol'],"CLOSE",getService(port, raw=True)))
+            for port in config['result']['open']:write("{}/{}\t {}\t {}\n".format(port,config['protocol'],"OPEN",getService(port, raw=True)))
     def show_options(self):
         if self.autoclean:self.clean()
         LAYOUT ="  {!s:15} {!s:10} {!s:50} {!s:39}"
@@ -291,8 +275,7 @@ class Scanopy:
         self.modOpt = odict([
                        ("threads", ['optional', "Specify Number Of Threads",self.threads]),
                        ("vscan", ['optional', "Specify 'true' To Enable Service And Version Scan",self.vscan]),
-                       ("verbose",['optional',"Specify 'true' To Show Output",self.verbose]),
-                       ("debug", ['optional', "Specify 'true' To Show More Output", self.debug])])
+                       ("verbose",['optional',"Specify 'true' To Show Output",self.verbose])])
         write("\n#gTarget Options\n#w==============#g\n\n")
         print(LAYOUT.format("[option]","[RQ]","[Description]","[value]"))
         write("#w  --------        ----       -------------                                      -------\n")
@@ -327,12 +310,9 @@ class Scanopy:
        except socket.error: pass
        return False
 
-    def interactive(self):
+    def shell(self):
         signal.signal(signal.SIGINT, self.quit)
         signal.signal(signal.SIGTERM,self.quit)
-        self.clean()
-        write(self.banner+"\n")
-        write("[*] Welcome To Scanopy Interactive Mode Interface(^_^)\n[*] type 'help' to show help msg.\n\n")
         try:
          while True:
             cmd = str(input("Scanopy> "))
@@ -352,7 +332,6 @@ class Scanopy:
                     ask = input("  [?] An update has been found, do you want to update now?(Y:n)> ").strip()
                     while not ask:
                              ask = input("    [!] please Answer with 'y' for yes or 'n' for no ?> ").strip()
-                             #write(" ")
                     if ask.lower() in ("yes","y"):
                          write("\n[~] Updating...please wait\n")
                          script = urllib.urlopen("https://raw.githubusercontent.com/Oseid/scanopy/master/scanopy.py").read()
@@ -373,9 +352,9 @@ class Scanopy:
             elif cmd.lower() == "help":self.show_help()
             elif cmd.lower() == "options":self.show_options()
             elif cmd.lower() == "start":
-                self.cmdCtrlC = False
-                self.start()
-                self.cmdCtrlC = True
+                   self.cmdCtrlC = False
+                   self.start()
+                   self.cmdCtrlC = True
             elif cmd.lower().startswith("set"):
                 data = "".join(cmd.strip().split("set")).strip()
                 if not data:write("Usage: set <Option> <Value>\n")
@@ -389,7 +368,6 @@ class Scanopy:
                     elif opt == "threads":write("Usage: set threads <number_of_threads> e.g: set threads 200\n")
                     elif opt == "vscan":write("Usage: set vscan <true, false> e.g: set vscan true")
                     elif opt == "verbose":write("Usage: set verbose <true, false> e.g: set verbose true")
-                    else:write("Usage: set debug <true, false> e.g: set debug true")
                 elif data.count(" ") != 1:write("[!] Unknown Command: '{}' !!!\n".format(data))
                 else:
                     opt,val = data.split(" ")
@@ -437,14 +415,9 @@ class Scanopy:
             else:write("[!] Unknown Command: '{}' !!!\n".format(cmd))
             print(" ")
          sys.exit(1)
-        except EOFError:
-            se(5)
-            pass
+        except EOFError:pass
     def start(self):
-        global event
-        global kill
-        global isKilled
-        global lock
+        global event,kill,isKilled,lock
         event = threading.Event()
         kill = lambda :event.set()
         isKilled =lambda :event.isSet()
@@ -460,7 +433,6 @@ class Scanopy:
         versionScan = self.vscan
         threads = self.threads
         verbose = self.verbose
-        debug = self.debug
         if not target.strip():
             errmsg("Target is not selected")
             return False
@@ -487,14 +459,10 @@ class Scanopy:
         if not verbose.strip() or verbose.lower() not in {'true','false'}:
             errmsg("verbose: must be 'true' or 'false'")
             return False
-        if not debug.strip() or debug.lower() not in {'true', 'false'}:
-            errmsg("debug: must be 'true' or 'false'")
-            return False
         if not versionScan.strip() or versionScan.lower() not in {'true', 'false'}:
             errmsg("versionScan: must be 'true' or 'false'")
             return False
         verbose = True if verbose.lower() == "true" else False
-        debug = True if debug.lower() == "true" else False
         versionScan = True if versionScan.lower() == "true" else False
         if versionScan:
             if not self.runner:
@@ -515,106 +483,32 @@ class Scanopy:
                   "threads":threads,
                   "servScan": servScan,
                   "verbose": verbose,
-                  "debug":debug,
                   "ret":0,
                   "result":{
                     "open":[],
-                   "close":[],
-                   "all":{0:0},
-                   "vscan": {}}}
-        if verbose or debug: write("#w[#y~#w]#y Starting #g{}#y Threads#w....\n".format(threads))
+                    "close":0,
+                    "vscan": {}}}
+        if verbose: write("#w[#y~#w]#y Starting #g{}#y Threads#w....\n".format(threads))
         mainThread = threading.Thread(target=self.startThreads)
         mainThread.daemon = True
         mainThread.start()
         while not self.finFlag:
             if self.abroFlag:break
-        if self.abroFlag:
-          if self.interactiveMode:return
-          else:sys.exit(1)
-        if debug:
+        if self.abroFlag:return
+        if not verbose: an.done = True
+        else:
             for thread in self.THREADS:write("#g[#w*#g]#w Thread-{} : has #gFinshied\n".format(thread.ident))
             self.printed+=1
-        if  not config['verbose'] and not config['debug']: an.done = True
         write("\n")
         self.printPorts()
         self.printed+=1
         mainThread.join()
-        config['ports'].join()
-        if self.interactiveMode:return
-        else:sys.exit(1)
-
-parse = optparse.OptionParser("""
-Usage: python ./scanopy.py [OPTIONS...]
--------------
-OPTIONS:
-       |
-    |--------
-    | -t --target   <TARGET>      (<required>)
-    |--------
-    | -p --ports    <PORT/S>      Default(<TOP_PORTS>)
-    |--------
-    | -P --protocol <protocol>    Default(<tcp>)
-    |--------
-    | -T --timeout  <Timeout>     Default(<5>)
-    |--------
-    | -r --threads  <threads>     Default(<5>)
-    |--------
-    | -i --interactive            Default(<off>)
-    |--------
-    | -s --vscan                  Default(<off>)
-    |--------
-    | -v --verbose                Default(<off>)
-    |--------
-    | -d --debug                  Default(<off>)
--------------
-Examples:
-        |
-     |--------
-     | python scanopy.py -i # enter to interactive mode interface
-     |-----------------------------------------------------------
-     | python scanopy.py -t google.com -p 1-1025 -P UDP -T 0.5 -r 10  -v
-     |------------------------------------------------------------------
-     | python scanopy.py -t 192.168.1.1 -p 21-25,80,135,443-445,139 -P TCP -T 2 -r 15 -d
-     |----------------------------------------------------------------------------------
-     | python scanopy.py -t 192.168.1.1 -p 1-1025,4444 -P TCP -T 2  -s -r 20 -d
-     |-------------------------------------------------------------------------
-""")
-def main():
+        return
+if __name__ =="__main__":
     scanopy = Scanopy()
     scanopy.clean()
     write(scanopy.banner + "\n")
-    write("[*] Welcome To Scanopy (^_^)\n")
-    parse.add_option("-i", "--interactive", action="store_true", dest="interactive",default=False)
-    parse.add_option("-t","--target",dest="target",type=str, help="set target to scan")
-    parse.add_option("-p","--ports",dest="ports",type=str, help="set ports to scan target with it")
-    parse.add_option("-P","--protocol",dest="protocol",type=str, help="set Connection Protocol")
-    parse.add_option("-T","--timeout",dest="timeout",type=str, help="set Connection Timeout")
-    parse.add_option("-s","--vscan",action="store_true",dest="vscan",default=False, help="use service and version scan")
-    parse.add_option("-r","--threads",dest="threads",type=str, help="set how many threads you wont to scan")
-    parse.add_option("-d","--debug",action="store_true",dest="debug",default=False, help="Show more Output")
-    parse.add_option("-v","--verbose",action="store_true",dest="verbose",default=False, help="show Output")
-    (opt,args) = parse.parse_args()
-    if opt.interactive:
-        scanopy.interactiveMode = True
-        scanopy.interactive()
-    elif opt.target !=None:
-        scanopy.target = opt.target
-        if opt.verbose:scanopy.verbose = "true"
-        if opt.debug:scanopy.debug = "true"
-        if opt.ports !=None:scanopy.ports = opt.ports
-        if opt.protocol !=None:scanopy.protocol = opt.protocol
-        if opt.timeout !=None:scanopy.timeout = opt.timeout
-        if opt.vscan:scanopy.vscan = 'true'
-        if opt.threads !=None:scanopy.threads = opt.threads
-        scanopy.cmdCtrlC = False
-        try:scanopy.start()
-        except(KeyboardInterrupt, EOFError):
-              scanopy.quit(1,2)
-    else:
-        print(parse.usage)
-        sys.exit(1)
-if __name__ == "__main__":
-    main()
+    scanopy.shell()
 ##############################################################
 #####################                #########################
 #####################   END OF TOOL  #########################
